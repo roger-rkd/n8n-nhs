@@ -1,0 +1,246 @@
+{
+  "name": "chat_workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "chat",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const sessionId = $json.session_id;\nconst message = $json.message;\n\nif (!sessionId || typeof sessionId !== 'string' || !sessionId.trim()) {\n  throw new Error('session_id is required');\n}\n\nif (!message || typeof message !== 'string' || !message.trim()) {\n  throw new Error('message is required');\n}\n\nreturn items;"
+      },
+      "id": "2",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const blockedPatterns = [\n  'ignore previous instructions',\n  'reveal system prompt',\n  'act as system',\n  'bypass safeguards',\n  'jailbreak',\n];\n\nconst message = String($json.message || '').toLowerCase();\nconst blocked = blockedPatterns.some((pattern) => message.includes(pattern));\n\nif (blocked) {\n  return [\n    {\n      json: {\n        ...$json,\n        response: 'Your request cannot be processed due to security restrictions.'\n      }\n    }\n  ];\n}\n\nreturn items;"
+      },
+      "id": "8",
+      "name": "Security Filter",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "if ($json.response) {\n  return items;\n}\n\nconst emergencyPhrases = [\n  'chest pain',\n  \"can't breathe\",\n  'stroke',\n  'severe bleeding',\n  'suicide',\n  'anaphylaxis',\n];\n\nconst message = String($json.message || '').toLowerCase();\nconst isEmergency = emergencyPhrases.some((phrase) => message.includes(phrase));\n\nif (isEmergency) {\n  return [\n    {\n      json: {\n        ...$json,\n        response: 'Your symptoms may require urgent medical attention. Call 999 immediately or contact NHS 111.'\n      }\n    }\n  ];\n}\n\nreturn [\n  {\n    json: {\n      ...$json\n    }\n  }\n];"
+      },
+      "id": "3",
+      "name": "Emergency Detection",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.response}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "4",
+      "name": "Is Emergency?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\n\nconst keys = [\n  'condition',\n  'overview',\n  'symptoms',\n  'self_care',\n  'when_to_see_gp',\n  'when_to_call_111',\n  'when_to_call_999',\n];\n\nconst candidates = [\n  path.resolve(process.cwd(), 'kb', 'conditions'),\n  path.resolve(process.cwd(), '..', 'kb', 'conditions'),\n  '/data/kb/conditions',\n];\n\nlet kbDir = '';\nfor (const candidate of candidates) {\n  if (fs.existsSync(candidate)) {\n    kbDir = candidate;\n    break;\n  }\n}\n\nconst blocks = [];\n\nif (kbDir) {\n  const files = fs.readdirSync(kbDir).filter((f) => f.toLowerCase().endsWith('.json'));\n\n  for (const fileName of files) {\n    const filePath = path.join(kbDir, fileName);\n    try {\n      const raw = fs.readFileSync(filePath, 'utf8');\n      const data = JSON.parse(raw);\n\n      const lines = [];\n      lines.push(`Condition: ${data.condition || ''}`);\n      lines.push(`Overview: ${data.overview || ''}`);\n      lines.push(`Symptoms: ${Array.isArray(data.symptoms) ? data.symptoms.join(', ') : (data.symptoms || '')}`);\n      lines.push(`Self Care: ${Array.isArray(data.self_care) ? data.self_care.join(', ') : (data.self_care || '')}`);\n      lines.push(`When to see GP: ${data.when_to_see_gp || ''}`);\n      lines.push(`When to call 111: ${data.when_to_call_111 || ''}`);\n      lines.push(`When to call 999: ${data.when_to_call_999 || ''}`);\n\n      blocks.push(lines.join('\\n'));\n    } catch (err) {\n      continue;\n    }\n  }\n}\n\nconst nhsContext = blocks.join('\\n\\n---\\n\\n');\n\nreturn [\n  {\n    json: {\n      ...$json,\n      nhs_context: nhsContext\n    }\n  }\n];"
+      },
+      "id": "9",
+      "name": "Load NHS Knowledge",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        410
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "jsonParameters": true,
+        "headerParametersJson": "={\"Authorization\":\"Bearer {{$env.GROQ_API_KEY}}\",\"Content-Type\":\"application/json\"}",
+        "bodyParametersJson": "={\"model\":\"llama-3.3-70b-versatile\",\"messages\":[{\"role\":\"system\",\"content\":\"You are an NHS-safe virtual health assistant.\\nUse ONLY the NHS context provided below when giving advice.\\n\\nNHS Context:\\n{{$json.nhs_context}}\"},{\"role\":\"user\",\"content\":\"Conversation history: {{$json.history ? JSON.stringify($json.history) : '[]'}}\\n\\nUser message: {{$json.message}}\"}]}",
+        "options": {}
+      },
+      "id": "5",
+      "name": "Groq Chat Completion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1540,
+        410
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const content = $json?.choices?.[0]?.message?.content;\nif (!content || typeof content !== 'string') {\n  throw new Error('Groq response missing assistant content');\n}\n\nreturn [\n  {\n    json: {\n      response: content\n    }\n  }\n];"
+      },
+      "id": "6",
+      "name": "Extract Assistant Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        410
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $json.response } }}",
+        "options": {}
+      },
+      "id": "7",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Security Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Security Filter": {
+      "main": [
+        [
+          {
+            "node": "Emergency Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emergency Detection": {
+      "main": [
+        [
+          {
+            "node": "Is Emergency?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Emergency?": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load NHS Knowledge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load NHS Knowledge": {
+      "main": [
+        [
+          {
+            "node": "Groq Chat Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Completion": {
+      "main": [
+        [
+          {
+            "node": "Extract Assistant Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Assistant Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "instanceId": "local"
+  },
+  "id": "chat_workflow",
+  "tags": []
+}

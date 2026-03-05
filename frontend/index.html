@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NHS AI Health Assistant</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1>NHS AI Health Assistant</h1>
+      <p>General health guidance only. In an emergency, call 999.</p>
+    </header>
+
+    <section class="disclaimer" role="note" aria-label="Safety disclaimer">
+      <p>This AI assistant provides general NHS-style health guidance.</p>
+      <p>It cannot diagnose medical conditions.</p>
+      <p>If symptoms are severe or worsening contact NHS 111 or call 999.</p>
+    </section>
+
+    <section id="chat-window" class="chat-window" aria-live="polite"></section>
+
+    <form id="chat-form" class="chat-form">
+      <input id="message-input" type="text" placeholder="Describe your symptoms..." autocomplete="off" required>
+      <button type="submit">Send</button>
+    </form>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

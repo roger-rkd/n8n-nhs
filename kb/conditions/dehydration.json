@@ -1,0 +1,19 @@
+﻿{
+    "condition":  "Dehydration",
+    "overview":  "Dehydration can cause symptoms seen in primary care. This information is supportive and cannot provide a diagnosis.",
+    "symptoms":  [
+                     "thirst",
+                     "dark urine",
+                     "dry mouth",
+                     "dizziness"
+                 ],
+    "self_care":  [
+                      "rest and drink fluids regularly",
+                      "monitor symptoms and keep a simple symptom diary",
+                      "avoid smoking and excess alcohol",
+                      "seek help early if symptoms worsen or do not improve"
+                  ],
+    "when_to_see_gp":  "Contact a GP if symptoms persist, get worse, or are affecting normal daily activities.",
+    "when_to_call_111":  "Call NHS 111 for urgent advice if symptoms are worsening, you are vulnerable, or you are unsure what to do.",
+    "when_to_call_999":  "Call 999 for severe breathing difficulty, chest pain, confusion, collapse, seizure, or signs of stroke."
+}
