@@ -3,8 +3,11 @@
 echo "Preparing n8n directory..."
 mkdir -p /home/node/.n8n
 
-echo "Importing workflow before startup..."
+echo "Importing workflow..."
 n8n import:workflow --input=/app/workflows/chat_workflow.json
+
+echo "Publishing workflow..."
+n8n publish:workflow --id=chat_workflow
 
 echo "Starting n8n..."
 n8n &
