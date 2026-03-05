@@ -1,14 +1,17 @@
-﻿FROM n8nio/n8n:latest
+﻿FROM python:3.11-slim
 
-USER root
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apk add --no-cache python3 py3-pip
+RUN npm install -g n8n
 
 WORKDIR /app
 
 COPY . .
 
-RUN pip3 install fastapi uvicorn pydantic
+RUN pip install fastapi uvicorn pydantic
 
 ENV N8N_PORT=5678
 ENV N8N_HOST=0.0.0.0
