@@ -1,4 +1,5 @@
 {
+    "id":  "chat_workflow",
     "name":  "chat_workflow",
     "nodes":  [
                   {
@@ -239,7 +240,7 @@
                                                                     ]
                                                        }
                     },
-    "active":  false,
+    "active":  true,
     "settings":  {
                      "executionOrder":  "v1"
                  },
