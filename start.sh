@@ -9,7 +9,7 @@ export N8N_ENCRYPTION_KEY=nhs-demo-key
 
 n8n &
 
-sleep 10
+sleep 12
 
 echo "Starting FastAPI..."
 
