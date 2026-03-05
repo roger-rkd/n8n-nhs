@@ -1,6 +1,6 @@
 ﻿---
 title: N8n Nhs
-emoji: globe_with_meridians
+emoji: 🌍
 colorFrom: indigo
 colorTo: red
 sdk: docker
@@ -27,3 +27,4 @@ The chatbot orchestration is implemented using n8n workflows to provide:
 • emergency detection
 • NHS-safe responses
 • AI reasoning with Groq
+
