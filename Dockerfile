@@ -2,6 +2,10 @@ FROM node:18-bullseye
 
 WORKDIR /app
 
+ENV N8N_PORT=5678
+ENV N8N_HOST=0.0.0.0
+ENV N8N_PROTOCOL=http
+
 # install python
 RUN apt-get update && apt-get install -y python3 python3-pip
 
