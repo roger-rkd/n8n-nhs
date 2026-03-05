@@ -1,19 +1,20 @@
-﻿FROM node:18-bullseye
+﻿FROM n8nio/n8n:latest
+
+USER root
+
+RUN apt-get update && apt-get install -y python3 python3-pip
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip bash && rm -rf /var/lib/apt/lists/*
-RUN npm install -g n8n
-
-COPY requirements.txt ./requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt
-
 COPY . .
+
+RUN pip3 install fastapi uvicorn pydantic
 
 ENV N8N_PORT=5678
 ENV N8N_HOST=0.0.0.0
 ENV N8N_PROTOCOL=http
 ENV N8N_ENCRYPTION_KEY=nhs-demo-key
+ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 
 EXPOSE 7860
 
