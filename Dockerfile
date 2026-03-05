@@ -1,14 +1,14 @@
-﻿FROM n8nio/n8n:latest
-
-USER root
-
-RUN apk add --no-cache python3 py3-pip bash
+﻿FROM node:18-bullseye
 
 WORKDIR /app
 
-COPY . .
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip bash && rm -rf /var/lib/apt/lists/*
+RUN npm install -g n8n
 
-RUN pip3 install -r requirements.txt
+COPY requirements.txt ./requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY . .
 
 ENV N8N_PORT=5678
 ENV N8N_HOST=0.0.0.0
