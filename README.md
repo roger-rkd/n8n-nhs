@@ -1,4 +1,4 @@
-﻿---
+---
 title: N8n Nhs
 emoji: 🌍
 colorFrom: indigo
@@ -27,4 +27,3 @@ The chatbot orchestration is implemented using n8n workflows to provide:
 • emergency detection
 • NHS-safe responses
 • AI reasoning with Groq
-
