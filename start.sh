@@ -5,11 +5,11 @@ echo "Starting n8n..."
 export N8N_PORT=5678
 export N8N_HOST=0.0.0.0
 export N8N_PROTOCOL=http
-export WEBHOOK_URL=http://localhost:5678
+export N8N_ENCRYPTION_KEY=nhs-demo-key
 
-n8n start &
+n8n &
 
-sleep 8
+sleep 10
 
 echo "Starting FastAPI..."
 
