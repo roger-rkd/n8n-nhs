@@ -167,7 +167,11 @@ def call_n8n_chat_webhook(payload: dict) -> str:
 def call_groq_chat_fallback(payload: dict) -> str:
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     if not api_key:
-        raise HTTPException(status_code=502, detail="n8n unavailable and GROQ_API_KEY not set")
+        return (
+            "I'm currently running in a limited fallback mode. "
+            "Please share your symptoms, and if symptoms are severe, sudden, or worsening, "
+            "contact NHS 111 or call 999 immediately."
+        )
 
     url = "https://api.groq.com/openai/v1/chat/completions"
     body = json.dumps(
@@ -203,17 +207,27 @@ def call_groq_chat_fallback(payload: dict) -> str:
     try:
         with request.urlopen(req, timeout=30) as resp:
             raw = resp.read().decode("utf-8")
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail="Groq fallback failed") from exc
+    except Exception:
+        return (
+            "I cannot access live AI services right now. "
+            "For urgent symptoms such as chest pain, severe breathing trouble, stroke signs, "
+            "or severe bleeding, call 999 now. Otherwise contact NHS 111."
+        )
 
     try:
         data = json.loads(raw) if raw else {}
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=502, detail="Invalid Groq fallback response") from exc
+    except json.JSONDecodeError:
+        return (
+            "I received an invalid response from the fallback service. "
+            "Please try again shortly, and contact NHS 111 if you need immediate guidance."
+        )
 
     text = data.get("choices", [{}])[0].get("message", {}).get("content")
     if not isinstance(text, str) or not text.strip():
-        raise HTTPException(status_code=502, detail="Groq fallback missing response text")
+        return (
+            "I couldn't generate a safe response this time. "
+            "If your symptoms are severe or worsening, contact NHS 111 or call 999."
+        )
     return text
 
 
