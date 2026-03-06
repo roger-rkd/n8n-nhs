@@ -81,7 +81,7 @@ def contains_blocked_pattern(message: str) -> bool:
 
 
 def get_n8n_base_url() -> str:
-    base_url = os.getenv("N8N_BASE_URL", "http://localhost:5678").strip()
+    base_url = os.getenv("N8N_BASE_URL", "https://n8n-nhs.onrender.com").strip()
     return base_url.rstrip("/")
 
 

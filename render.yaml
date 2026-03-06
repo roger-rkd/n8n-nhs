@@ -2,12 +2,19 @@
   - type: web
     name: n8n-nhs
     runtime: docker
+    dockerfilePath: ./Dockerfile.render
     plan: free
     autoDeploy: true
     envVars:
       - key: N8N_HOST
-        value: 0.0.0.0
+        value: n8n-nhs.onrender.com
       - key: N8N_PORT
-        value: 5678
+        value: "5678"
       - key: N8N_PROTOCOL
         value: https
+      - key: WEBHOOK_URL
+        value: https://n8n-nhs.onrender.com/
+      - key: N8N_EDITOR_BASE_URL
+        value: https://n8n-nhs.onrender.com/
+      - key: N8N_ENCRYPTION_KEY
+        sync: false

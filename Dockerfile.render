@@ -1,0 +1,18 @@
+﻿FROM n8nio/n8n:latest
+
+USER root
+WORKDIR /app
+
+COPY workflows /app/workflows
+COPY render-start.sh /app/render-start.sh
+RUN chmod +x /app/render-start.sh && chown -R node:node /app
+
+USER node
+
+ENV N8N_HOST=0.0.0.0
+ENV N8N_PORT=5678
+ENV N8N_PROTOCOL=https
+
+EXPOSE 5678
+
+CMD ["/app/render-start.sh"]
