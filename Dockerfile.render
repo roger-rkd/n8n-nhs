@@ -15,4 +15,4 @@ ENV N8N_PROTOCOL=https
 
 EXPOSE 5678
 
-CMD ["/app/render-start.sh"]
+CMD ["sh", "/app/render-start.sh"]
