@@ -164,6 +164,59 @@ def call_n8n_chat_webhook(payload: dict) -> str:
     return response_text
 
 
+def call_groq_chat_fallback(payload: dict) -> str:
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        raise HTTPException(status_code=502, detail="n8n unavailable and GROQ_API_KEY not set")
+
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    body = json.dumps(
+        {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an NHS-safe virtual health assistant.\n"
+                        "Use ONLY the NHS context provided below when giving advice.\n\n"
+                        f"NHS Context:\n{payload.get('nhs_context', '')}"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Conversation history: {json.dumps(payload.get('history', []))}\n\n"
+                        f"User message: {payload.get('message', '')}"
+                    ),
+                },
+            ],
+        }
+    ).encode("utf-8")
+
+    req = request.Request(
+        url=url,
+        data=body,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with request.urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode("utf-8")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Groq fallback failed") from exc
+
+    try:
+        data = json.loads(raw) if raw else {}
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail="Invalid Groq fallback response") from exc
+
+    text = data.get("choices", [{}])[0].get("message", {}).get("content")
+    if not isinstance(text, str) or not text.strip():
+        raise HTTPException(status_code=502, detail="Groq fallback missing response text")
+    return text
+
+
 @app.get("/")
 def read_index():
     if not INDEX_FILE.exists():
@@ -198,7 +251,13 @@ def chat(req: ChatRequest):
             "nhs_context": NHS_CONTEXT,
         }
 
-    assistant_response = call_n8n_chat_webhook(payload)
+    try:
+        assistant_response = call_n8n_chat_webhook(payload)
+    except HTTPException as exc:
+        if exc.status_code == 502:
+            assistant_response = call_groq_chat_fallback(payload)
+        else:
+            raise
 
     with sessions_lock:
         session = sessions.setdefault(req.session_id, {"history": [], "last_seen": time.time()})
