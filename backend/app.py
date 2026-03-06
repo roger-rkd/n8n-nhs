@@ -231,11 +231,51 @@ def call_groq_chat_fallback(payload: dict) -> str:
     return text
 
 
+def dependency_diagnostics() -> dict:
+    n8n_result = {"ok": False, "detail": ""}
+    groq_result = {"configured": False, "ok": False, "detail": ""}
+
+    n8n_url = f"{get_n8n_base_url()}/healthz"
+    try:
+        req = request.Request(url=n8n_url, method="GET")
+        with request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+        n8n_result["ok"] = True
+        n8n_result["detail"] = body[:200]
+    except Exception as exc:
+        n8n_result["detail"] = str(exc)
+
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    groq_result["configured"] = bool(api_key)
+    if api_key:
+        try:
+            req = request.Request(
+                url="https://api.groq.com/openai/v1/models",
+                method="GET",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            with request.urlopen(req, timeout=15) as resp:
+                _ = resp.read()
+            groq_result["ok"] = True
+            groq_result["detail"] = "reachable"
+        except Exception as exc:
+            groq_result["detail"] = str(exc)
+    else:
+        groq_result["detail"] = "GROQ_API_KEY missing"
+
+    return {"n8n": n8n_result, "groq": groq_result}
+
+
 @app.get("/")
 def read_index():
     if not INDEX_FILE.exists():
         raise HTTPException(status_code=404, detail="Frontend index not found")
     return FileResponse(INDEX_FILE)
+
+
+@app.get("/health/deps")
+def health_deps():
+    return dependency_diagnostics()
 
 
 @app.post("/chat")
