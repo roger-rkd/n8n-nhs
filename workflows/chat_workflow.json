@@ -11,7 +11,7 @@
                       "parameters":  {
                                          "path":  "chat",
                                          "httpMethod":  "POST",
-                                         "responseMode":  "responseNode",
+                                         "responseMode":  "lastNode",
                                          "options":  {
 
                                                      }
@@ -132,15 +132,11 @@
                   },
                   {
                       "parameters":  {
-                                         "respondWith":  "json",
-                                         "responseBody":  "={{ { \"response\": $json.response } }}",
-                                         "options":  {
-
-                                                     }
+                                         "functionCode":  "const text = .response || .choices?.[0]?.message?.content || \u0027\u0027;\nif (!text || typeof text !== \u0027string\u0027) {\n  throw new Error(\u0027Missing response text\u0027);\n}\nreturn [{ json: { response: text } }];"
                                      },
-                      "id":  "7",
-                      "name":  "Respond to Webhook",
-                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "id":  "10",
+                      "name":  "Finalize Response",
+                      "type":  "n8n-nodes-base.function",
                       "typeVersion":  1,
                       "position":  [
                                        1980,
@@ -193,24 +189,6 @@
                                                                  ]
                                                              ]
                                                 },
-                        "Is Emergency?":  {
-                                              "main":  [
-                                                           [
-                                                               {
-                                                                   "node":  "Respond to Webhook",
-                                                                   "type":  "main",
-                                                                   "index":  0
-                                                               }
-                                                           ],
-                                                           [
-                                                               {
-                                                                   "node":  "Load NHS Knowledge",
-                                                                   "type":  "main",
-                                                                   "index":  0
-                                                               }
-                                                           ]
-                                                       ]
-                                          },
                         "Load NHS Knowledge":  {
                                                    "main":  [
                                                                 [
@@ -233,15 +211,31 @@
                                                                   ]
                                                               ]
                                                  },
+                        "Is Emergency?":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "Finalize Response",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ],
+                                                           [
+                                                               {
+                                                                   "node":  "Load NHS Knowledge",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
                         "Extract Assistant Response":  {
                                                            "main":  [
-                                                                        [
-                                                                            {
-                                                                                "node":  "Respond to Webhook",
-                                                                                "type":  "main",
-                                                                                "index":  0
-                                                                            }
-                                                                        ]
+                                                                        {
+                                                                            "node":  "Finalize Response",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
                                                                     ]
                                                        }
                     },
