@@ -133,13 +133,24 @@ def call_n8n_chat_webhook(payload: dict) -> str:
         method="POST",
     )
 
-    try:
-        with request.urlopen(req, timeout=30) as resp:
-            raw = resp.read().decode("utf-8")
-    except error.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"n8n returned HTTP {exc.code}") from exc
-    except error.URLError as exc:
-        raise HTTPException(status_code=502, detail="Failed to reach n8n") from exc
+    raw = ""
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        try:
+            with request.urlopen(req, timeout=30) as resp:
+                raw = resp.read().decode("utf-8")
+            break
+        except error.HTTPError as exc:
+            # Render free instances can return transient errors during cold start.
+            if exc.code in (429, 502, 503, 504) and attempt < max_attempts - 1:
+                time.sleep(2 ** attempt)
+                continue
+            raise HTTPException(status_code=502, detail=f"n8n returned HTTP {exc.code}") from exc
+        except error.URLError as exc:
+            if attempt < max_attempts - 1:
+                time.sleep(2 ** attempt)
+                continue
+            raise HTTPException(status_code=502, detail="Failed to reach n8n") from exc
 
     try:
         data = json.loads(raw) if raw else {}
